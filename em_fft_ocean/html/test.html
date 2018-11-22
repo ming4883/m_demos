@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en-us">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <style>
+        .button {
+            background-color: rgb(75, 116, 177);
+            color: white;
+            padding: 5px 15px;
+            text-align: center;
+            display: inline-block;
+            cursor: pointer;
+        }
+        </style>
+    </head>
+    <body>
+        <!--img id="png" style="width:16px;" /-->
+        <div><img id="png" /></div>
+        <div id="update" class="button">UPDATE</div>
+        <script type="text/javascript" src="./out/fft_ocean_lib.js"></script>
+        <script>
+        let fft_ocean = {};
+        fft_ocean["create"] = Module.cwrap('fft_ocean_create', 'number', ['number']);
+        fft_ocean["destroy"] = Module.cwrap('fft_ocean_destroy', null, ['number']);
+        fft_ocean["get_png"] = Module.cwrap('fft_ocean_get_png', 'string', ['number', 'number']);
+        fft_ocean["evaluate"] = Module.cwrap('fft_ocean_evaluate', null, ['number', 'number', 'number']);
+        fft_ocean["time"] = 0.0;
+        fft_ocean["inst"] = null;
+        fft_ocean["update"] = false;
+    
+    Module['onRuntimeInitialized'] = function(){
+
+        var update = function() {
+
+            if (null == fft_ocean.inst)
+                fft_ocean.inst = fft_ocean.create(128);
+
+            var png = 'data:image/png;base64, ' + fft_ocean.get_png(fft_ocean.inst, fft_ocean.time);
+
+            //console.log('t = ' + fft_ocean.time + ': ' + fft_ocean.inst);
+            document.getElementById('png').src = png;
+        };
+        
+        refreshData = function () {
+            fft_ocean.time += 0.1;
+            update();
+            if (fft_ocean.update) {
+                setTimeout(refreshData, 100);
+            }
+        }
+
+        document.getElementById('update').addEventListener("click", 
+            function(ev) {
+                if (fft_ocean.update) {
+                    fft_ocean.update = false;
+                    document.getElementById('update').innerHTML = "UPDATE";
+                }
+                else {
+                    fft_ocean.update = true;
+                    document.getElementById('update').innerHTML = "PAUSE ";
+                    refreshData();
+                }
+            }
+        );
+
+        update();
+        
+    };
+        </script>
+    </body>
+</html>

@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="en-us">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    </head>
+    <body>
+        
+    </body>
+</html>
+
+<!doctype html>
+<html lang="en-us">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>EM FFT Ocean Demo</title>
+    
+    <script type="text/javascript" src="./claygl.min.js"></script>
+    <script type="text/javascript" src="./out/fft_ocean_lib.js"></script>
+
+    <script type="x-shader/x-vertex" id="vs">
+uniform mat4 worldViewProjection : WORLDVIEWPROJECTION;
+uniform mat4 world : WORLD;
+uniform sampler2D u_LookupTabel;
+        
+attribute vec3 position: POSITION;
+attribute vec2 texcoord : TEXCOORD_0;
+
+varying vec2 v_Texcoord;
+varying vec3 v_WorldPosition;
+
+void main() {
+    vec3 pos = position.xzy * 20.0;
+    vec4 lut = texture2D(u_LookupTabel, texcoord);
+
+    float scale = 0.25;
+    pos.y = lut.x * 0.3 * scale;
+    pos.xz += lut.yz * 0.5 * scale;
+
+    gl_Position = worldViewProjection * vec4(pos, 1.0);
+    v_Texcoord = texcoord;
+    v_WorldPosition = (world * vec4(pos, 1.0)).xyz;
+}
+    </script>
+
+    <script type="x-shader/x-fragment" id="fs">
+
+uniform mat4 viewInverse : VIEWINVERSE;
+
+uniform sampler2D u_LookupTabel;
+uniform vec4 u_LookupTabelTexelSize;
+uniform sampler2D u_normalMap;
+uniform vec4 u_time;
+
+varying vec2 v_Texcoord;
+varying vec3 v_WorldPosition;
+
+// Gamma correction
+#define GAMMA (2.2)
+
+vec3 ToLinear( in vec3 col )
+{
+	// simulate a monitor, converting colour values into light values
+	return pow( col, vec3(GAMMA) );
+}
+
+vec3 ToGamma( in vec3 col )
+{
+	// convert back into colour values, so the correct light will come out of the monitor
+	return pow( col, vec3(1.0/GAMMA) );
+}
+
+float hash(vec2 p)  // replace this by something better
+{
+    p  = 50.0*fract( p*0.3183099 + vec2(0.71,0.113));
+    return -1.0+2.0*fract( p.x*p.y*(p.x+p.y) );
+}
+
+float noise( in vec2 p )
+{
+    vec2 i = floor( p );
+    vec2 f = fract( p );
+	
+	vec2 u = f*f*(3.0-2.0*f);
+
+    return mix( mix( hash( i + vec2(0.0,0.0) ), 
+                     hash( i + vec2(1.0,0.0) ), u.x),
+                mix( hash( i + vec2(0.0,1.0) ), 
+                     hash( i + vec2(1.0,1.0) ), u.x), u.y);
+}
+
+void main() {
+    float h = texture2D(u_LookupTabel, v_Texcoord).x;
+    float s = 0.5;
+
+    float hpx = texture2D(u_LookupTabel, v_Texcoord + u_LookupTabelTexelSize.xy * vec2(s, 0.0)).x;
+    float hnx = texture2D(u_LookupTabel, v_Texcoord - u_LookupTabelTexelSize.xy * vec2(s, 0.0)).x;
+
+    float hpy = texture2D(u_LookupTabel, v_Texcoord + u_LookupTabelTexelSize.xy * vec2(0.0, s)).x;
+    float hny = texture2D(u_LookupTabel, v_Texcoord - u_LookupTabelTexelSize.xy * vec2(0.0, s)).x;
+    
+    vec2 n2 = vec2(hpx - hnx, hpy - hny) * 2.0;
+
+    vec3 n = normalize(vec3(n2.x, 4.0, n2.y));
+
+    vec2 dn_uv = v_WorldPosition.xz / 20.0;
+    vec4 dn_t = texture2D(u_normalMap, dn_uv);
+    vec3 dn = normalize(dn_t.xyz * 2.0 - 1.0);
+
+    n = normalize(vec3(n.xz + dn.xy * 0.5, n.y).xzy);
+    
+    vec3 eyePos = viewInverse[3].xyz;
+    vec3 ray = normalize(v_WorldPosition - eyePos);
+
+    float ndotr = dot(n, ray);
+    float fresnel = pow(1.0 - abs(ndotr), 5.0);
+    
+    vec3 col = mix(vec3(0,.04,.04), vec3(.4,.45,.5), fresnel * 0.5);
+
+    float foam = clamp((h - 10.0) / 20.0, 0.0, 1.0); // foam intensity from water displacement
+
+    {
+        vec2 uv = v_WorldPosition.xz * 2.0;
+        mat2 m = mat2( 1.6,  1.2, -1.2,  1.6 );
+        float f;
+		f  = 0.5000*noise( uv ); uv = m*uv;
+		f += 0.2500*noise( uv ); uv = m*uv;
+		f += 0.1250*noise( uv ); uv = m*uv;
+        f += 0.0625*noise( uv ); uv = m*uv;
+        
+        foam -= clamp(f, 0.0, 1.0) * 0.25;
+        foam = clamp(foam, 0.0, 1.0);
+        foam *= 0.5;
+    }
+    
+    col = mix(col, vec3(1.0), foam);
+
+    //col = vec3(foam, foam, foam);
+
+    gl_FragColor = vec4(ToGamma(col), 1.0);
+}
+    </script>
+</head>
+<body>
+    <style>
+        html, body, #main {
+            height: 100%;
+            margin: 0;
+        }
+    </style>
+    <div id="main"></div>
+    <script>
+let fft_ocean = {};
+fft_ocean["create"] = Module.cwrap('fft_ocean_create', 'number', ['number']);
+fft_ocean["destroy"] = Module.cwrap('fft_ocean_destroy', null, ['number']);
+fft_ocean["get_png"] = Module.cwrap('fft_ocean_get_png', 'string', ['number', 'number']);
+fft_ocean["evaluate"] = Module.cwrap('fft_ocean_evaluate', null, ['number', 'number', 'number']);
+fft_ocean["app"] = null;
+
+Module['onRuntimeInitialized'] = function(){
+
+    function createOceanGeometry(N) {
+        var geometry = new clay.StaticGeometry();
+
+        let heightSegments = N;
+        let widthSegments = N;
+        let Nplus1 = N + 1;
+
+        geometry.attributes.position.init(Nplus1 * Nplus1);
+        geometry.attributes.texcoord0.init(Nplus1 * Nplus1);
+        
+        let positions = geometry.attributes.position.value;
+        let texcoords = geometry.attributes.texcoord0.value;
+        let faces = [];
+
+        for (let y = 0; y <= heightSegments; y++) {
+            let t = y / heightSegments;
+            for (let x = 0; x <= widthSegments; x++) {
+                let s = x / widthSegments;
+
+                let i = x + y * Nplus1;
+                let i3 = i * 3;
+                let i2 = i * 2;
+
+                positions[i3 + 0] = 2 * s - 1;
+                positions[i3 + 1] = 2 * t - 1;
+                positions[i3 + 2] = 0;
+
+                texcoords[i2 + 0] = s;
+                texcoords[i2 + 1] = t;
+                
+                if (x < widthSegments && y < heightSegments) {
+                    faces.push([i, i + Nplus1, i + 1]);
+                    faces.push([i + Nplus1, i + Nplus1 + 1, i + 1]);
+                }
+            }
+        }
+
+        geometry.initIndicesFromArray(faces);
+
+        //geometry.boundingBox = new BoundingBox();
+        //geometry.boundingBox.min.set(-1,-1, 0);
+        //geometry.boundingBox.max.set( 1, 1, 0);
+
+        return geometry;
+    }
+
+    function createOceanTextureDirect(N, pixelsArray) {
+        return new clay.Texture2D({
+            wrapS: clay.Texture.REPEAT,
+            wrapT: clay.Texture.REPEAT,
+            width: N,
+            height: N,
+            format: clay.Texture.RGBA,
+            type: clay.Texture.FLOAT,
+            flipY: false,
+            premultiplyAlpha: false,
+            useMipmap: false,
+            mipmaps: [ { pixels: pixelsArray} ]
+        });
+    }
+
+    function createOceanTexture(N) {
+
+        var pixelsArray = new Float32Array(N * N * 4);
+
+        for(let y = 0; y < N; ++y) {
+            for(let x = 0; x < N; ++x) {
+                let index = (y * N + x) * 4;
+                pixelsArray[index] = y / N;
+                pixelsArray[index+1] = 0;
+                pixelsArray[index+2] = 0;
+                pixelsArray[index+3] = 0;
+            }
+        }
+
+        return createOceanTextureDirect(N, pixelsArray);
+    }
+
+    let N = 128;
+    let t = 0.0;
+
+    fft_ocean.app = clay.application.create('#main', {
+
+        event: true,
+
+        init: function (app) {
+
+            let oceanShader = new clay.Shader({
+                vertex: document.getElementById('vs').textContent,
+                fragment: document.getElementById('fs').textContent
+            });
+
+            app.oceanMaterial = new clay.Material({
+                shader: oceanShader
+            });
+
+            app.oceanTexture = createOceanTexture(N);
+            app.oceanMaterial.set('u_LookupTabel', app.oceanTexture);
+            app.oceanMaterial.set('u_LookupTabelTexelSize', [1.0 / N, 1.0 / N, N, N]);
+            app.loadTexture('0001.png')
+                .then(function (texture) {
+                    app.oceanMaterial.set('u_normalMap', texture);
+                });
+
+            this._camera = app.createCamera([0, 5, 20], [0, 0, 0]);
+            app.createMesh(createOceanGeometry(N * 2), app.oceanMaterial);
+
+            app.ocean = fft_ocean.create(N);
+
+            let SIZE_FLOAT = 4;
+            let XYZW = 4;
+            let numBytes = N * N * SIZE_FLOAT * XYZW;
+            app.heap = new Uint8Array(Module.HEAPU8.buffer, Module._malloc(numBytes), numBytes);
+
+        },
+
+        loop: function (app) {
+            
+            let heap = app.heap;
+            fft_ocean.evaluate(app.ocean, t, heap.byteOffset);
+
+            let result = new Float32Array(heap.buffer, heap.byteOffset, N * N * 4);
+            app.oceanTexture.mipmaps = [ { pixels: result} ];
+            app.oceanTexture.dirty();
+
+            //app.oceanMaterial.set('u_time', [0.0, t * 0.5, t, t * 2]);
+
+            //Module._free(heap.byteOffset);
+
+            t += 0.1;
+        }
+    }); // clay.application.create
+
+    window.onresize = function () {
+        fft_ocean.app.resize()
+    }; // window.onresize
+
+}; // Module
+
+    </script>
+</body>
+</html>
