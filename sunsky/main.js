@@ -2,7 +2,8 @@
 
 let SkySettings = function() {
   this.turbidity = 3.0;
-  this.time = 0;
+  this.sun_x = 0;
+  this.sun_z = 0;
 };
 
 window.onload = function() {
@@ -10,7 +11,8 @@ window.onload = function() {
     let skySettings = new SkySettings();
     let gui = new dat.GUI();
     gui.add(skySettings, 'turbidity', 1, 16);
-    gui.add(skySettings, 'time', 0, 359);
+    gui.add(skySettings, 'sun_x', -1, 1, 0.05);
+    gui.add(skySettings, 'sun_z', -1, 1, 0.05);
 
     let canvas = document.getElementById('babylon_canvas');
     let engine = new BABYLON.Engine(canvas, true);
@@ -62,8 +64,9 @@ window.onload = function() {
 
         if (scene.skybox)
         {
-            scene.skybox.material.setFloat("time", -(skySettings.time / 180.0) * 3.1415926);
-            scene.skybox.material.setFloat("turbidity", skySettings.turbidity);
+            let mtl = scene.skybox.material;
+            mtl.setFloat("turbidity", skySettings.turbidity);
+            mtl.setVector3("sunDir", new BABYLON.Vector3(skySettings.sun_x, 1.0, skySettings.sun_z).normalizeToNew());
         }
         scene.render();
     });

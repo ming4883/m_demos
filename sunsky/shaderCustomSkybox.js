@@ -37,6 +37,7 @@ varying vec3 vNormal;
 // Refs
 uniform mat4 world;
 uniform float time;
+uniform vec3 sunDir;
 uniform float turbidity;
 
 #define PI 3.14159265359
@@ -139,9 +140,9 @@ void main(void) {
 
     vec3 e = normalize( vec3( world * vPosition ) );
     
-    float azimuth       = PI * 0.5;
-    float inclination   = time;
-    vec3 sunDir     	= normalize( vec3( sin(inclination) * cos(azimuth), cos(inclination), sin(inclination) * sin(azimuth) ) );
+    //float azimuth       = PI * 0.5;
+    //float inclination   = time;
+    //vec3 sunDir     	= normalize( vec3( sin(inclination) * cos(azimuth), cos(inclination), sin(inclination) * sin(azimuth) ) );
     vec3 viewDir  		= e;
     vec3 skyLuminance 	= calculateSkyLuminanceRGB( sunDir, viewDir, turbidity );
     
