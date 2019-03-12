@@ -138,12 +138,7 @@ vec3 calculateSkyLuminanceRGB( in vec3 s, in vec3 e, in float t )
 
 void main(void) {
 
-    vec3 e = normalize( vec3( world * vPosition ) );
-    
-    //float azimuth       = PI * 0.5;
-    //float inclination   = time;
-    //vec3 sunDir     	= normalize( vec3( sin(inclination) * cos(azimuth), cos(inclination), sin(inclination) * sin(azimuth) ) );
-    vec3 viewDir  		= e;
+    vec3 viewDir  		= normalize( vec3( world * vPosition ) );
     vec3 skyLuminance 	= calculateSkyLuminanceRGB( sunDir, viewDir, turbidity );
     
     gl_FragColor 		= vec4( skyLuminance * 0.05, 1.0 );

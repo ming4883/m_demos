@@ -40,14 +40,18 @@ uniform mat4 worldView;
 
 void main(void) {
 
+
+    vec4 tex = texture2D(textureSampler, vUV);
+    if (tex.w < 0.1)
+        discard;
+    
     vec3 e = normalize( vec3( worldView * vPosition ) );
     vec3 n = normalize( worldView * vec4(vNormal, 0.0) ).xyz;
     float d = dot(e, n);
     d = (d * d * 0.5 + 0.5);
 
-    vec3 tex = texture2D(textureSampler, vUV).xyz;
-    gl_FragColor = vec4(d * tex, 1.0);
-}    
+    gl_FragColor = vec4(d * tex.xyz, 1.0);
+}
 `,
 create : function(scene) {
     let shaderName = "customVisualize";

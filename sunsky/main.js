@@ -3,15 +3,17 @@
 let SkySettings = function() {
   this.turbidity = 3.0;
   this.sun_x = 0;
-  this.sun_z = 0;
+  this.sun_y = 0.25;
+  this.sun_z = -1;
 };
 
 window.onload = function() {
     
     let skySettings = new SkySettings();
     let gui = new dat.GUI();
-    gui.add(skySettings, 'turbidity', 1, 16);
+    gui.add(skySettings, 'turbidity', 2, 16);
     gui.add(skySettings, 'sun_x', -1, 1, 0.05);
+    gui.add(skySettings, 'sun_y', 0.05, 1, 0.05);
     gui.add(skySettings, 'sun_z', -1, 1, 0.05);
 
     let canvas = document.getElementById('babylon_canvas');
@@ -66,7 +68,7 @@ window.onload = function() {
         {
             let mtl = scene.skybox.material;
             mtl.setFloat("turbidity", skySettings.turbidity);
-            mtl.setVector3("sunDir", new BABYLON.Vector3(skySettings.sun_x, 1.0, skySettings.sun_z).normalizeToNew());
+            mtl.setVector3("sunDir", new BABYLON.Vector3(skySettings.sun_x, skySettings.sun_y, skySettings.sun_z).normalizeToNew());
         }
         scene.render();
     });
