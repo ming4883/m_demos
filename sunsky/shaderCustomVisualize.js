@@ -35,22 +35,25 @@ varying vec4 vPosition;
 varying vec3 vNormal;
 
 // Refs
-uniform sampler2D textureSampler;
+uniform sampler2D baseTextureSampler;
+uniform samplerCube skyTextureSampler;
 uniform mat4 worldView;
 
 void main(void) {
 
-
-    vec4 tex = texture2D(textureSampler, vUV);
-    if (tex.w < 0.1)
+    vec4 base = texture2D(baseTextureSampler, vUV);
+    if (base.w < 0.1)
         discard;
     
     vec3 e = normalize( vec3( worldView * vPosition ) );
     vec3 n = normalize( worldView * vec4(vNormal, 0.0) ).xyz;
+    
+    vec3 sky = textureCube(skyTextureSampler, reflect(-e, n)).xyz;
     float d = dot(e, n);
     d = (d * d * 0.5 + 0.5);
+    sky += d * 0.25;
 
-    gl_FragColor = vec4(d * tex.xyz, 1.0);
+    gl_FragColor = vec4(sky * base.xyz, 1.0);
 }
 `,
 create : function(scene) {
@@ -64,8 +67,7 @@ create : function(scene) {
     },
     {
         attributes: ["position", "normal", "uv"],
-        uniforms: ["world", "worldView", "worldViewProjection", "view", "projection", "time", "direction" ],
-        samplers: ["textureSampler"],
+        uniforms: ["world", "worldView", "worldViewProjection", "view", "projection" ],
     });
     mtl.backFaceCulling = false;
     return mtl;

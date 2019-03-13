@@ -60,31 +60,38 @@ window.onload = function() {
         let camera = new BABYLON.ArcRotateCamera("Camera", 1.570796, 1.570796, 500, BABYLON.Vector3.Zero(), scene);
         camera.attachControl(canvas, false);
 
+        // Add skybox
+        let skyMaterial = shaderCustomSkybox.create(scene);
+        let skybox = BABYLON.Mesh.CreateBox("skyBox", 10000.0, scene);
+        skybox.material = skyMaterial;
+
+        scene.skybox = skybox;
+
+        let probe = new BABYLON.ReflectionProbe("Probe", 128, scene, false, true);
+        probe.renderList.push(skybox);
+
+        // this is god damn important for using RenderTargetTexture in ShaderMaterial
+        scene.customRenderTargets.push(probe.cubeTexture);
+
         // Import meshes
         BABYLON.SceneLoader.Append("./content/buster_drone/", "scene.gltf", scene, function (loaded) {
             
             console.log(`Loaded ${loaded.meshes.length} meshes`);
             //console.log(scene);
 
-            for(let i = 0; i < loaded.meshes.length; ++i)
+            for(let i = 1; i < loaded.meshes.length; ++i)
             {
                 let srcMaterial = loaded.meshes[i].material;
                 if (srcMaterial)
                 {
                     //console.log(`${i}, ${srcMaterial.albedoTexture}`);
                     let objMaterial = shaderCustomVisualize.create(scene);
-                    objMaterial.setTexture("textureSampler", srcMaterial.albedoTexture);
-
+                    objMaterial.setTexture("baseTextureSampler", srcMaterial.albedoTexture);
+                    objMaterial.setTexture("skyTextureSampler", probe.cubeTexture);
                     loaded.meshes[i].material = objMaterial;
                 }
             }
-
-            // Add skybox
-            let skyMaterial = shaderCustomSkybox.create(scene);
-            let skybox = BABYLON.Mesh.CreateBox("skyBox", 10000.0, scene);
-            skybox.material = skyMaterial;
-
-            scene.skybox = skybox;
+            
         });
 
         return scene;
