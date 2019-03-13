@@ -3,7 +3,7 @@
   "main": "index.html",
   "window": {
     "title": "Babylon JS Demos",
-    "toolbar": true,
+    "toolbar": false,
     "frame": true,
     "width": 800,
     "height": 450

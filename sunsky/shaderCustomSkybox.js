@@ -72,7 +72,6 @@ vec3 XYZToRGB( in vec3 XYZ )
 	return XYZ * M;
 }
 
-
 vec3 YxyToRGB( in vec3 Yxy )
 {
 	vec3 XYZ = YxyToXYZ( Yxy );
@@ -136,12 +135,63 @@ vec3 calculateSkyLuminanceRGB( in vec3 s, in vec3 e, in float t )
 	return YxyToRGB( Yp );
 }
 
+
+float Tonemap_Uchimura(float x, float P, float a, float m, float l, float c, float b) {
+    // Uchimura 2017, "HDR theory and practice"
+    // Math: https://www.desmos.com/calculator/gslcdxvipg
+    // Source: https://www.slideshare.net/nikuque/hdr-theory-and-practicce-jp
+    float l0 = ((P - m) * l) / a;
+    float L0 = m - m / a;
+    float L1 = m + (1.0 - m) / a;
+    float S0 = m + l0;
+    float S1 = m + a * l0;
+    float C2 = (a * P) / (P - S1);
+    float CP = -C2 / P;
+
+    float w0 = 1.0 - smoothstep(0.0, m, x);
+    float w2 = step(m + l0, x);
+    float w1 = 1.0 - w0 - w2;
+
+    float T = m * pow(x / m, c) + b;
+    float S = P - (P - S1) * exp(CP * (x - S0));
+    float L = m + a * (x - m);
+
+    return T * w0 + L * w1 + S * w2;
+}
+
+uniform vec4 tonemapping0;
+uniform vec4 tonemapping1;
+
+float Tonemap_Uchimura(float x) {
+	float P = tonemapping0.x; // max display brightness
+    float a = tonemapping0.y; // contrast
+    float m = tonemapping0.z; // linear section start
+    float l = tonemapping0.w; // linear section length
+    float c = tonemapping1.x; // black
+    float b = tonemapping1.y; // pedestal
+
+    float mapped = Tonemap_Uchimura(x, P, a, m, l, c, b);
+
+	P = 1.0;  // max display brightness
+    a = 1.0;  // contrast
+    m = 0.22; // linear section start
+    l = 0.4;  // linear section length
+    c = 1.33; // black
+    b = 0.0;  // pedestal
+
+	return Tonemap_Uchimura((2.0 * mapped) / tonemapping0.x, P, a, m, l, c, b);
+}
+
+
 void main(void) {
 
     vec3 viewDir  		= normalize( vec3( world * vPosition ) );
     vec3 skyLuminance 	= calculateSkyLuminanceRGB( sunDir, viewDir, turbidity );
     
-    gl_FragColor 		= vec4( skyLuminance * 0.05, 1.0 );
+	skyLuminance.x		= Tonemap_Uchimura(skyLuminance.x);
+	skyLuminance.y		= Tonemap_Uchimura(skyLuminance.y);
+	skyLuminance.z		= Tonemap_Uchimura(skyLuminance.z);
+	gl_FragColor 		= vec4( skyLuminance, 1.0 );
 }    
 `,
 create : function(scene) {
@@ -155,7 +205,7 @@ create : function(scene) {
     },
     {
         attributes: ["position", "normal", "uv"],
-        uniforms: ["world", "worldView", "worldViewProjection", "view", "projection", "time", "turbidity" ],
+        uniforms: ["world", "worldView", "worldViewProjection", "view", "projection", "time", "turbidity", "tonemapping0", "tonemapping1" ],
     });
     mtl.backFaceCulling = false;
     return mtl;
