@@ -7600,31 +7600,31 @@
       "uri": "textures/material_baseColor.png"
     },
     {
-      "uri": "textures/material_baseColor.png"
+      "uri": "textures/material_normal.png"
     },
     {
-      "uri": "textures/material_baseColor.png"
-    },
-    {
-      "uri": "textures/body_baseColor.png"
+      "uri": "textures/material_metallicRoughness.png"
     },
     {
       "uri": "textures/body_baseColor.png"
     },
     {
-      "uri": "textures/body_baseColor.png"
+      "uri": "textures/body_emissive.png"
     },
     {
-      "uri": "textures/body_baseColor.png"
+      "uri": "textures/body_metallicRoughness.png"
+    },
+    {
+      "uri": "textures/body_normal.png"
     },
     {
       "uri": "textures/Boden_baseColor.png"
     },
     {
-      "uri": "textures/Boden_baseColor.png"
+      "uri": "textures/Boden_metallicRoughness.png"
     },
     {
-      "uri": "textures/Boden_baseColor.png"
+      "uri": "textures/Boden_normal.png"
     }
   ],
   "materials": [
