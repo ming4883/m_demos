@@ -5,14 +5,19 @@ let SkySettings = function() {
     this.sun_x = 0;
     this.sun_y = 0.25;
     this.sun_z = -1;
+    this.sun_brightness = 1.0;
+    
 
     // https://www.desmos.com/calculator/gslcdxvipg
     this.tm_P = 20.0;  // max display brightness
-    this.tm_a = 0.33;  // contrast
+    this.tm_P_r = 1.0;  // max display brightness red scalar
+    this.tm_P_g = 1.0;  // max display brightness green scalar
+    this.tm_P_b = 1.0;  // max display brightness blue scalar
+    this.tm_a = 0.375;  // contrast
     this.tm_m = 0.22; // linear section start
     this.tm_l = 0.4;  // linear section length
     this.tm_c = 1.33; // black
-    this.tm_b = 0.0;  // pedestal
+    //this.tm_b = 0.0;  // pedestal
 };
 
 window.onload = function() {
@@ -20,19 +25,26 @@ window.onload = function() {
     let skySettings = new SkySettings();
     let gui = new dat.GUI();
     let f1 = gui.addFolder('Sun');
-    f1.add(skySettings, 'turbidity', 2, 16);
+    f1.add(skySettings, 'turbidity', 2, 6, 0.1);
     f1.add(skySettings, 'sun_x', -1, 1, 0.05);
     f1.add(skySettings, 'sun_y', 0.05, 1, 0.05);
     f1.add(skySettings, 'sun_z', -1, 1, 0.05);
+    f1.add(skySettings, 'sun_brightness', 0.0, 2.0, 0.05);
     f1.open();
-    let f2 = gui.addFolder('Tonemapping');
-    f2.add(skySettings, 'tm_P', 10, 50);
-    f2.add(skySettings, 'tm_a', 0.0, 1.0);
-    f2.add(skySettings, 'tm_m', 0.0, 1.0);
-    f2.add(skySettings, 'tm_l', 0.0, 1.0);
-    f2.add(skySettings, 'tm_c', 0.0, 2.0);
-    f2.add(skySettings, 'tm_b');
+    
+    let f2 = gui.addFolder('Color Control');
+    f2.add(skySettings, 'tm_P_r', 0, 2, 0.01);
+    f2.add(skySettings, 'tm_P_g', 0, 2, 0.01);
+    f2.add(skySettings, 'tm_P_b', 0, 2, 0.01);
     f2.open();
+
+    let f3 = gui.addFolder('Tonemapping');
+    f3.add(skySettings, 'tm_P', 10, 50);
+    f3.add(skySettings, 'tm_a', 0.0, 1.0);
+    f3.add(skySettings, 'tm_m', 0.0, 1.0);
+    f3.add(skySettings, 'tm_l', 0.0, 1.0);
+    f3.add(skySettings, 'tm_c', 0.0, 5.0);
+    f3.open();
 
     let canvas = document.getElementById('babylon_canvas');
     let engine = new BABYLON.Engine(canvas, true);
@@ -86,6 +98,7 @@ window.onload = function() {
         {
             let mtl = scene.skybox.material;
             let sunDir = new BABYLON.Vector3(skySettings.sun_x, skySettings.sun_y, skySettings.sun_z).normalizeToNew();
+            let sunParams = new BABYLON.Vector4(skySettings.sun_brightness, 0.0, 0.0, 0.0);
             let tm0 = new BABYLON.Vector4(
                 skySettings.tm_P,
                 skySettings.tm_a,
@@ -93,11 +106,12 @@ window.onload = function() {
                 skySettings.tm_l);
             let tm1 = new BABYLON.Vector4(
                 skySettings.tm_c,
-                skySettings.tm_b,
-                0.0,
-                0.0);
+                skySettings.tm_P_r,
+                skySettings.tm_P_g,
+                skySettings.tm_P_b);
             mtl.setFloat("turbidity", skySettings.turbidity);
             mtl.setVector3("sunDir", sunDir);
+            mtl.setVector4("sunParams", sunParams);
             mtl.setVector4("tonemapping0", tm0);
             mtl.setVector4("tonemapping1", tm1);
         }

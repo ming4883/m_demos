@@ -36,9 +36,11 @@ varying vec3 vNormal;
 
 // Refs
 uniform mat4 world;
-uniform float time;
-uniform vec3 sunDir;
 uniform float turbidity;
+uniform vec3 sunDir;
+uniform vec4 sunParams;
+uniform vec4 tonemapping0;
+uniform vec4 tonemapping1;
 
 #define PI 3.14159265359
 
@@ -159,38 +161,42 @@ float Tonemap_Uchimura(float x, float P, float a, float m, float l, float c, flo
     return T * w0 + L * w1 + S * w2;
 }
 
-uniform vec4 tonemapping0;
-uniform vec4 tonemapping1;
-
-float Tonemap_Uchimura(float x) {
+float Tonemap_Uchimura(float x, float P_scale) {
 	float P = tonemapping0.x; // max display brightness
     float a = tonemapping0.y; // contrast
     float m = tonemapping0.z; // linear section start
     float l = tonemapping0.w; // linear section length
     float c = tonemapping1.x; // black
-    float b = tonemapping1.y; // pedestal
+    float b = 0.0; // pedestal
 
-    float mapped = Tonemap_Uchimura(x, P, a, m, l, c, b);
+    float mapped = Tonemap_Uchimura(x * P_scale, P, a, m, l, c, b);
+	mapped = mapped / tonemapping0.x;
 
+	// Tone map once more for display
 	P = 1.0;  // max display brightness
-    a = 1.0;  // contrast
+	a = 1.0;  // contrast
     m = 0.22; // linear section start
     l = 0.4;  // linear section length
     c = 1.33; // black
     b = 0.0;  // pedestal
 
-	return Tonemap_Uchimura((2.0 * mapped) / tonemapping0.x, P, a, m, l, c, b);
+	return Tonemap_Uchimura(mapped, P, a, m, l, c, b);
 }
-
 
 void main(void) {
 
     vec3 viewDir  		= normalize( vec3( world * vPosition ) );
     vec3 skyLuminance 	= calculateSkyLuminanceRGB( sunDir, viewDir, turbidity );
     
-	skyLuminance.x		= Tonemap_Uchimura(skyLuminance.x);
-	skyLuminance.y		= Tonemap_Uchimura(skyLuminance.y);
-	skyLuminance.z		= Tonemap_Uchimura(skyLuminance.z);
+	skyLuminance.x		= Tonemap_Uchimura(skyLuminance.x, tonemapping1.y);
+	skyLuminance.y		= Tonemap_Uchimura(skyLuminance.y, tonemapping1.z);
+	skyLuminance.z		= Tonemap_Uchimura(skyLuminance.z, tonemapping1.w);
+
+	float sunIntensity  = max(0.0, dot(viewDir, sunDir));
+	sunIntensity 		= pow(sunIntensity, 256.0) * sunParams.x;
+
+	skyLuminance 		= skyLuminance + skyLuminance * sunIntensity;
+
 	gl_FragColor 		= vec4( skyLuminance, 1.0 );
 }    
 `,
@@ -205,7 +211,7 @@ create : function(scene) {
     },
     {
         attributes: ["position", "normal", "uv"],
-        uniforms: ["world", "worldView", "worldViewProjection", "view", "projection", "time", "turbidity", "tonemapping0", "tonemapping1" ],
+        uniforms: ["world", "worldView", "worldViewProjection", "view", "projection"],
     });
     mtl.backFaceCulling = false;
     return mtl;
