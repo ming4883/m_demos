@@ -170,17 +170,9 @@ float Tonemap_Uchimura(float x, float P_scale) {
     float b = 0.0; // pedestal
 
     float mapped = Tonemap_Uchimura(x * P_scale, P, a, m, l, c, b);
-	mapped = mapped / tonemapping0.x;
+	//mapped = (2.0 * mapped) / tonemapping0.x;
 
-	// Tone map once more for display
-	P = 1.0;  // max display brightness
-	a = 1.0;  // contrast
-    m = 0.22; // linear section start
-    l = 0.4;  // linear section length
-    c = 1.33; // black
-    b = 0.0;  // pedestal
-
-	return Tonemap_Uchimura(mapped, P, a, m, l, c, b);
+    return mapped;
 }
 
 void main(void) {
@@ -193,7 +185,7 @@ void main(void) {
 	skyLuminance.z		= Tonemap_Uchimura(skyLuminance.z, tonemapping1.w);
 
 	float sunIntensity  = max(0.0, dot(viewDir, sunDir));
-	sunIntensity 		= pow(sunIntensity, 256.0) * sunParams.x;
+	sunIntensity 		= pow(sunIntensity, 256.0) * 2.0 * sunParams.x;
 
 	skyLuminance 		= skyLuminance + skyLuminance * sunIntensity;
 
