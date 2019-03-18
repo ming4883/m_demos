@@ -80,6 +80,15 @@ window.onload = function() {
         let probe = new BABYLON.ReflectionProbe("Probe", 256, scene, true, true);
         probe.renderList.push(skybox);
 
+        // Add cloud layer
+        let cloudMaterial = shaderCloud.create(scene);
+        cloudMaterial.setTexture("skyTextureSampler", probe.cubeTexture);
+        let cloudLayer = BABYLON.Mesh.CreatePlane("cloudLayer", 10000.0, scene);
+        cloudLayer.material = cloudMaterial;
+        cloudLayer.position.y = 500;
+        cloudLayer.rotation.x = 1.570796;
+        scene.cloudLayer = cloudLayer;
+
         // this is god damn important for using RenderTargetTexture in ShaderMaterial
         scene.customRenderTargets.push(probe.cubeTexture);
 
@@ -90,7 +99,7 @@ window.onload = function() {
             //console.log(scene);
 
             // Skip skybox
-            for(let i = 1; i < loaded.meshes.length; ++i)
+            for(let i = 2; i < loaded.meshes.length; ++i)
             {
                 let srcMaterial = loaded.meshes[i].material;
                 if (srcMaterial)
@@ -134,6 +143,7 @@ window.onload = function() {
     }
 
     let scene = createScene();
+    let time  = 0.0;
     
     engine.runRenderLoop(function() {
 
@@ -159,6 +169,13 @@ window.onload = function() {
             mtl.setVector4("tonemapping1", tm1);
         }
 
+        if (scene.cloudLayer)
+        {
+            scene.cloudLayer.material.setFloat("iTime", time);
+        }
+
         scene.render();
+
+        time = time + 0.01667;
     });
 }

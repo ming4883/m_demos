@@ -44,7 +44,7 @@ vec3 Tonemap_Uchimura(vec3 color) {
     float c = 1.33; // black
     float b = 0.0;  // pedestal
 
-    color.xyz /= param_P;
+    //color.xyz /= param_P;
 
 	color.x = Tonemap_Uchimura(color.x, P, a, m, l, c, b);
     color.y = Tonemap_Uchimura(color.y, P, a, m, l, c, b);

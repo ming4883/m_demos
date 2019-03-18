@@ -21,7 +21,9 @@ void main(void) {
     vUV = uv;
     vNormal = normal;
     vPosition = vec4(position, 1.0);
-    gl_Position = worldViewProjection * vPosition;
+    vec4 screenPosition = worldViewProjection * vPosition;
+    screenPosition.z = screenPosition.w;
+    gl_Position = screenPosition;
 }	        
 `
 ,
@@ -170,7 +172,8 @@ float Tonemap_Uchimura(float x, float P_scale) {
     float b = 0.0; // pedestal
 
     float mapped = Tonemap_Uchimura(x * P_scale, P, a, m, l, c, b);
-	//mapped = (2.0 * mapped) / tonemapping0.x;
+	mapped = mapped / P;
+    //mapped *= 2.0;
 
     return mapped;
 }
