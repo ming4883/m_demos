@@ -87,10 +87,8 @@ float fbm(vec2 n) {
 // -----------------------------------------------
 
 void main(void) {
-    vec2 iResolution = vec2(1.0, 1.0);
-    
     vec2 p = (world * vPosition).xz * 0.0006;
-	vec2 uv = p*vec2(iResolution.x/iResolution.y,1.0);    
+	vec2 uv = p;
     float time = iTime * speed;
     float q = fbm(uv * cloudscale * 0.5);
     
@@ -107,7 +105,7 @@ void main(void) {
     
     //noise shape
 	float f = 0.0;
-    uv = p*vec2(iResolution.x/iResolution.y,1.0);
+    uv = p;
 	uv *= cloudscale;
     uv -= q - time;
     weight = 0.7;
@@ -122,7 +120,7 @@ void main(void) {
     //noise colour
     float c = 0.0;
     time = iTime * speed * 2.0;
-    uv = p*vec2(iResolution.x/iResolution.y,1.0);
+    uv = p;
 	uv *= cloudscale*2.0;
     uv -= q - time;
     weight = 0.4;
@@ -135,7 +133,7 @@ void main(void) {
     //noise ridge colour
     float c1 = 0.0;
     time = iTime * speed * 3.0;
-    uv = p*vec2(iResolution.x/iResolution.y,1.0);
+    uv = p;
 	uv *= cloudscale*3.0;
     uv -= q - time;
     weight = 0.4;
@@ -149,7 +147,9 @@ void main(void) {
     
     vec3 e = normalize((world * vPosition).xyz);
     e.y *= -1.0;
-    vec3 skycolour = textureCube(skyTextureSampler, e).xyz; //mix(skycolour2, skycolour1, p.y);
+
+    vec3 skycolour = textureCube(skyTextureSampler, e).xyz;
+    
     vec3 cloudcolour = vec3(1.1, 1.1, 0.9) * clamp((clouddark + cloudlight*c), 0.0, 1.0);
    
     f = cloudcover + cloudalpha * f * r;
@@ -161,7 +161,7 @@ void main(void) {
     vec3 result = vec3(1.0) - (vec3(1.0) - skycolour) * (vec3(1.0) - cloudcolour);
     result *= (skycolour + 0.25);
 
-	gl_FragColor = vec4( result, f);
+	gl_FragColor = vec4(result, f);
 }    
 `,
 create : function(scene) {

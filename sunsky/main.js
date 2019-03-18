@@ -3,9 +3,9 @@
 let SkySettings = function() {
     this.turbidity = 3.0;
     this.sun_x = 0;
-    this.sun_y = 0.25;
+    this.sun_y = 1.0;
     this.sun_z = -1;
-    this.sun_brightness = 1.0;
+    this.sun_brightness = 0.25;
     
     // https://www.desmos.com/calculator/gslcdxvipg
     this.tm_P = 20.0;  // max display brightness
