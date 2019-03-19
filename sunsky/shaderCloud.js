@@ -43,16 +43,22 @@ uniform mat4 world;
 uniform mat4 worldView;
 
 // -----------------------------------------------
-
-const float cloudscale = 1.1;
-const float speed = 0.01;
-const float clouddark = 0.5;
-const float cloudlight = 0.6;
 const float cloudcover = 0.2;
 const float cloudalpha = 8.0;
-const float skytint = 0.5;
-const vec3 skycolour1 = vec3(0.2, 0.4, 0.6);
-const vec3 skycolour2 = vec3(0.4, 0.7, 1.0);
+
+/*
+const float cloudscale = 0.002;
+const float cloudspeed = 0.02;
+const float clouddark = 0.5;
+const float cloudlight = 0.6;
+const float cloudskytint = 1.0;
+*/
+
+uniform float cloudscale;
+uniform float cloudspeed;
+uniform float clouddark;
+uniform float cloudlight;
+uniform float cloudskytint;
 
 const mat2 m = mat2( 1.6,  1.2, -1.2,  1.6 );
 
@@ -84,12 +90,17 @@ float fbm(vec2 n) {
 	return total;
 }
 
+float npr(float f) {
+    return clamp(f, 0.0, 1.0);
+    //return 1.0 - (1.0-f) * (1.0-f);
+}
+
 // -----------------------------------------------
 
 void main(void) {
-    vec2 p = (world * vPosition).xz * 0.0006;
+    vec2 p = (world * vPosition).xz;
 	vec2 uv = p;
-    float time = iTime * speed;
+    float time = iTime * cloudspeed;
     float q = fbm(uv * cloudscale * 0.5);
     
     //ridged noise shape
@@ -117,28 +128,28 @@ void main(void) {
     
     f *= r + f;
     
-    //noise colour
+    //noise color
     float c = 0.0;
-    time = iTime * speed * 2.0;
+    time = iTime * cloudspeed * 2.0;
     uv = p;
 	uv *= cloudscale*2.0;
     uv -= q - time;
     weight = 0.4;
     for (int i=0; i<7; i++){
-		c += weight*noise( uv );
+		c += (weight*noise( uv ));
         uv = m*uv + time;
 		weight *= 0.6;
     }
     
-    //noise ridge colour
+    //noise ridge color
     float c1 = 0.0;
-    time = iTime * speed * 3.0;
+    time = iTime * cloudspeed * 3.0;
     uv = p;
 	uv *= cloudscale*3.0;
     uv -= q - time;
     weight = 0.4;
     for (int i=0; i<7; i++){
-		c1 += abs(weight*noise( uv ));
+		c1 += (abs(weight*noise( uv )));
         uv = m*uv + time;
 		weight *= 0.6;
     }
@@ -148,20 +159,23 @@ void main(void) {
     vec3 e = normalize((world * vPosition).xyz);
     e.y *= -1.0;
 
-    vec3 skycolour = textureCube(skyTextureSampler, e).xyz;
-    
-    vec3 cloudcolour = vec3(1.1, 1.1, 0.9) * clamp((clouddark + cloudlight*c), 0.0, 1.0);
+    vec3 skycolor = textureCube(skyTextureSampler, e).xyz;
+
+    vec3 cloudcolor = vec3(1.1, 1.1, 1.1) * clamp((clouddark + cloudlight*c), 0.0, 1.0);
    
     f = cloudcover + cloudalpha * f * r;
     f = clamp(f + c, 0.0, 1.0);
 
-    //vec3 result = mix(skycolour, clamp(skytint * skycolour + cloudcolour, 0.0, 1.0), f);
-
     // PS screen blend mode
-    vec3 result = vec3(1.0) - (vec3(1.0) - skycolour) * (vec3(1.0) - cloudcolour);
-    result *= (skycolour + 0.25);
+    vec3 result = vec3(1.0) - clamp(vec3(1.0) - skycolor, vec3(0.1), vec3(1.0)) * (vec3(1.0) - cloudcolor);
+    result *= (cloudskytint + skycolor);
+    
+    // depth fade
+    float d = (worldView * vPosition).z;
+    d = 1.0 - clamp(d / 4000.0, 0.0, 1.0);
 
-	gl_FragColor = vec4(result, f);
+    // final output
+	gl_FragColor = vec4(result, d * f);
 }    
 `,
 create : function(scene) {

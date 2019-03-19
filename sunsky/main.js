@@ -8,16 +8,22 @@ let SkySettings = function() {
     this.sun_brightness = 0.25;
     
     // https://www.desmos.com/calculator/gslcdxvipg
-    this.tm_P = 20.0;  // max display brightness
+    this.tm_P = 12.0;  // max display brightness
     this.tm_P_r = 1.0;  // max display brightness red scalar
     this.tm_P_g = 1.0;  // max display brightness green scalar
-    this.tm_P_b = 1.0;  // max display brightness blue scalar
-    this.tm_a = 0.5;  // contrast
+    this.tm_P_b = 1.2;  // max display brightness blue scalar
+    this.tm_a = 0.35;  // contrast
     this.tm_m = 0.22; // linear section start
     this.tm_l = 0.4;  // linear section length
     this.tm_c = 1.33; // black
     this.pp_tonemapping = true;
     //this.tm_b = 0.0;  // pedestal
+
+    this.cloudscale = 0.002;
+    this.cloudspeed = 0.02;
+    this.clouddark = 0.5;
+    this.cloudlight = 0.6;
+    this.cloudskytint = 1.0;
 
     this.init_gui = function() {
         let gui = new dat.GUI();
@@ -27,7 +33,7 @@ let SkySettings = function() {
         f1.add(this, 'sun_y', 0.05, 1, 0.05);
         f1.add(this, 'sun_z', -1, 1, 0.05);
         f1.add(this, 'sun_brightness', 0.0, 2.0, 0.05);
-        f1.open();
+        // f1.open();
         
         let f2 = gui.addFolder('Sky Color Control');
         f2.add(this, 'tm_P_r', 0, 2, 0.01);
@@ -43,9 +49,17 @@ let SkySettings = function() {
         f3.add(this, 'tm_c', 0.0, 5.0);
         f3.open();
 
-        let f4 = gui.addFolder('Post Process');
-        f4.add(this, 'pp_tonemapping');
+        let f4 = gui.addFolder('Cloud');
+        f4.add(this, 'cloudscale', 0, 0.01, 0.0001);
+        f4.add(this, 'cloudspeed', 0, 0.1, 0.001);
+        f4.add(this, 'clouddark', 0, 1.0, 0.01);
+        f4.add(this, 'cloudlight', 0, 1.0, 0.01);
+        f4.add(this, 'cloudskytint', 0, 1.0, 0.01);
         f4.open();
+
+        let f5 = gui.addFolder('Post Process');
+        f5.add(this, 'pp_tonemapping');
+        //f5.open();
 
         return gui;
     }
@@ -98,7 +112,7 @@ window.onload = function() {
             console.log(`Loaded ${loaded.meshes.length} meshes`);
             //console.log(scene);
 
-            // Skip skybox
+            // Skip skybox & cloud
             for(let i = 2; i < loaded.meshes.length; ++i)
             {
                 let srcMaterial = loaded.meshes[i].material;
@@ -111,7 +125,6 @@ window.onload = function() {
                     loaded.meshes[i].material = objMaterial;
                 }
             }
-            
         });
 
         let pipeline = new BABYLON.DefaultRenderingPipeline(
@@ -171,7 +184,13 @@ window.onload = function() {
 
         if (scene.cloudLayer)
         {
-            scene.cloudLayer.material.setFloat("iTime", time);
+            let mtl = scene.cloudLayer.material;
+            mtl.setFloat("iTime", time);
+            mtl.setFloat("cloudscale", skySettings.cloudscale);
+            mtl.setFloat("cloudspeed", skySettings.cloudspeed);
+            mtl.setFloat("cloudlight", skySettings.cloudlight);
+            mtl.setFloat("clouddark", skySettings.clouddark);
+            mtl.setFloat("cloudskytint", skySettings.cloudskytint);
         }
 
         scene.render();
