@@ -1,8 +1,8 @@
 //let os = require('os');
 
 let SkySettings = function() {
-    this.turbidity = 3.0;
-    this.sun_x = 0;
+    this.turbidity = 2.2;
+    this.sun_x = -0.75;
     this.sun_y = 1.0;
     this.sun_z = -1;
     this.sun_brightness = 0.25;
@@ -19,8 +19,8 @@ let SkySettings = function() {
     this.pp_tonemapping = true;
     //this.tm_b = 0.0;  // pedestal
 
-    this.cloudscale = 0.002;
-    this.cloudspeed = 0.02;
+    this.cloudscale = 0.001;
+    this.cloudspeed = 0.0;//0.02;
     this.clouddark = 0.5;
     this.cloudlight = 0.6;
     this.cloudskytint = 1.0;
@@ -33,13 +33,13 @@ let SkySettings = function() {
         f1.add(this, 'sun_y', 0.05, 1, 0.05);
         f1.add(this, 'sun_z', -1, 1, 0.05);
         f1.add(this, 'sun_brightness', 0.0, 2.0, 0.05);
-        // f1.open();
+        f1.open();
         
         let f2 = gui.addFolder('Sky Color Control');
         f2.add(this, 'tm_P_r', 0, 2, 0.01);
         f2.add(this, 'tm_P_g', 0, 2, 0.01);
         f2.add(this, 'tm_P_b', 0, 2, 0.01);
-        f2.open();
+        //f2.open();
 
         let f3 = gui.addFolder('Sky Tonemapping');
         f3.add(this, 'tm_P', 2, 50);
@@ -47,7 +47,7 @@ let SkySettings = function() {
         f3.add(this, 'tm_m', 0.0, 1.0);
         f3.add(this, 'tm_l', 0.0, 1.0);
         f3.add(this, 'tm_c', 0.0, 5.0);
-        f3.open();
+        //f3.open();
 
         let f4 = gui.addFolder('Cloud');
         f4.add(this, 'cloudscale', 0, 0.01, 0.0001);
@@ -97,10 +97,10 @@ window.onload = function() {
         // Add cloud layer
         let cloudMaterial = shaderCloud.create(scene);
         cloudMaterial.setTexture("skyTextureSampler", probe.cubeTexture);
-        let cloudLayer = BABYLON.Mesh.CreatePlane("cloudLayer", 10000.0, scene);
+        let cloudLayer = BABYLON.Mesh.CreateBox("cloudLayer", 10000.0, scene);
         cloudLayer.material = cloudMaterial;
-        cloudLayer.position.y = 500;
-        cloudLayer.rotation.x = 1.570796;
+        //cloudLayer.position.y = 500;
+        //cloudLayer.rotation.x = 1.570796;
         scene.cloudLayer = cloudLayer;
 
         // this is god damn important for using RenderTargetTexture in ShaderMaterial
@@ -160,10 +160,13 @@ window.onload = function() {
     
     engine.runRenderLoop(function() {
 
+        let sunDir = new BABYLON.Vector3(skySettings.sun_x, skySettings.sun_y, skySettings.sun_z).normalizeToNew();
+        let viewPos = scene.activeCamera.position;
+        
         if (scene.skybox)
         {
             let mtl = scene.skybox.material;
-            let sunDir = new BABYLON.Vector3(skySettings.sun_x, skySettings.sun_y, skySettings.sun_z).normalizeToNew();
+            
             let sunParams = new BABYLON.Vector4(skySettings.sun_brightness, 0.0, 0.0, 0.0);
             let tm0 = new BABYLON.Vector4(
                 skySettings.tm_P,
@@ -185,12 +188,15 @@ window.onload = function() {
         if (scene.cloudLayer)
         {
             let mtl = scene.cloudLayer.material;
+            
             mtl.setFloat("iTime", time);
             mtl.setFloat("cloudscale", skySettings.cloudscale);
             mtl.setFloat("cloudspeed", skySettings.cloudspeed);
             mtl.setFloat("cloudlight", skySettings.cloudlight);
             mtl.setFloat("clouddark", skySettings.clouddark);
             mtl.setFloat("cloudskytint", skySettings.cloudskytint);
+            mtl.setVector3("sunDir", sunDir);
+            mtl.setVector3("viewPos", viewPos);
         }
 
         scene.render();

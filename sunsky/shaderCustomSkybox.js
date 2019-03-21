@@ -178,6 +178,27 @@ float Tonemap_Uchimura(float x, float P_scale) {
     return mapped;
 }
 
+
+// ----------------------------------------------------------------------------
+// Sky Color
+// ----------------------------------------------------------------------------
+
+/*
+_constant(vec3) sun_color = vec3(1., .7, .55);
+vec3 render_sky_color(
+	_in(ray_t) eye
+){
+	vec3 rd = eye.direction;
+	float sun_amount = max(dot(rd, SUN_DIR), 0.0);
+
+	vec3  sky = mix(vec3(.0, .1, .4), vec3(.3, .6, .8), 1.0 - rd.y);
+	sky = sky + sun_color * min(pow(sun_amount, 1500.0) * 5.0, 1.0);
+	sky = sky + sun_color * min(pow(sun_amount, 10.0) * .6, 1.0);
+
+	return sky;
+}
+*/
+
 void main(void) {
 
     vec3 viewDir  		= normalize( vec3( world * vPosition ) );
@@ -188,9 +209,11 @@ void main(void) {
 	skyLuminance.z		= Tonemap_Uchimura(skyLuminance.z, tonemapping1.w);
 
 	float sunIntensity  = max(0.0, dot(viewDir, sunDir));
-	sunIntensity 		= pow(sunIntensity, 256.0) * 2.0 * sunParams.x;
+	sunIntensity 		= (min(1.0, pow(sunIntensity, 1500.0) * 5.0) +
+                           min(1.0, pow(sunIntensity, 10.0) * .60)
+                          ) * sunParams.x;
 
-	skyLuminance 		= skyLuminance + skyLuminance * sunIntensity;
+	skyLuminance 		= skyLuminance + sunIntensity;
 
 	gl_FragColor 		= vec4( skyLuminance, 1.0 );
 }    
