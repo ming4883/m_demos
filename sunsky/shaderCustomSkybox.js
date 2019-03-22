@@ -199,6 +199,11 @@ vec3 render_sky_color(
 }
 */
 
+vec3 modify_sat(vec3 clr, float sat) {
+    vec3 grey = vec3(dot(clr, vec3(0.2126, 0.7152, 0.0722)));
+    return mix(grey, clr, sat);    
+}
+
 void main(void) {
 
     vec3 viewDir  		= normalize( vec3( world * vPosition ) );
@@ -214,6 +219,8 @@ void main(void) {
                           ) * sunParams.x;
 
 	skyLuminance 		= skyLuminance + sunIntensity;
+
+    skyLuminance        = modify_sat(skyLuminance, 1.5);
 
 	gl_FragColor 		= vec4( skyLuminance, 1.0 );
 }    

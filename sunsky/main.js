@@ -11,7 +11,7 @@ let SkySettings = function() {
     this.tm_P = 12.0;  // max display brightness
     this.tm_P_r = 1.0;  // max display brightness red scalar
     this.tm_P_g = 1.0;  // max display brightness green scalar
-    this.tm_P_b = 1.2;  // max display brightness blue scalar
+    this.tm_P_b = 1.0;  // max display brightness blue scalar
     this.tm_a = 0.35;  // contrast
     this.tm_m = 0.22; // linear section start
     this.tm_l = 0.4;  // linear section length
@@ -19,11 +19,8 @@ let SkySettings = function() {
     this.pp_tonemapping = true;
     //this.tm_b = 0.0;  // pedestal
 
-    this.cloudscale = 0.001;
-    this.cloudspeed = 0.0;//0.02;
-    this.clouddark = 0.5;
-    this.cloudlight = 0.6;
-    this.cloudskytint = 1.0;
+    this.cloudscale = 0.004;
+    this.cloudspeed = 0.2;
 
     this.init_gui = function() {
         let gui = new dat.GUI();
@@ -50,11 +47,8 @@ let SkySettings = function() {
         //f3.open();
 
         let f4 = gui.addFolder('Cloud');
-        f4.add(this, 'cloudscale', 0, 0.01, 0.0001);
-        f4.add(this, 'cloudspeed', 0, 0.1, 0.001);
-        f4.add(this, 'clouddark', 0, 1.0, 0.01);
-        f4.add(this, 'cloudlight', 0, 1.0, 0.01);
-        f4.add(this, 'cloudskytint', 0, 1.0, 0.01);
+        f4.add(this, 'cloudscale', 0.0001, 0.01, 0.0001);
+        f4.add(this, 'cloudspeed', 0, 2.0, 0.01);
         f4.open();
 
         let f5 = gui.addFolder('Post Process');
@@ -195,9 +189,6 @@ window.onload = function() {
             mtl.setFloat("iTime", time);
             mtl.setFloat("cloudscale", skySettings.cloudscale);
             mtl.setFloat("cloudspeed", skySettings.cloudspeed);
-            mtl.setFloat("cloudlight", skySettings.cloudlight);
-            mtl.setFloat("clouddark", skySettings.clouddark);
-            mtl.setFloat("cloudskytint", skySettings.cloudskytint);
             mtl.setVector3("sunDir", sunDir);
             mtl.setVector3("viewPos", viewPos);
         }

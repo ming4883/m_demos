@@ -44,16 +44,18 @@ uniform mat4 world;
 uniform mat4 worldView;
 uniform vec3 viewPos;
 uniform vec3 sunDir;
+uniform float cloudscale;
+uniform float cloudspeed;
 
 /**** TWEAK *****************************************************************/
 #define COVERAGE		.50
 #define THICKNESS		8.
-#define EXPONENT		1.2
+#define EXPONENT		1.5
 #define ABSORPTION		1.130725
 #define BRIGHTNESS 		0.67
-#define CLOUD_SCALE     (0.2 * 0.0212242)
+#define CLOUD_SCALE     cloudscale
 
-#define WIND			vec3(0, 0, -u_time * .2)
+#define WIND			vec3(0, 0, -u_time * cloudspeed)
 
 #define FBM_FREQ		2.76434
 //#define NOISE_VALUE
@@ -63,7 +65,7 @@ uniform vec3 sunDir;
 #define FAKE_LIGHT
 #define SUN_DIR			sunDir
 
-#define STEPS			16
+#define STEPS			8
 /******************************************************************************/
 
 #if defined(GL_ES) || defined(GL_SHADING_LANGUAGE_VERSION)
@@ -72,21 +74,16 @@ uniform vec3 sunDir;
     #define _out(T) out T
     #define _begin(type) type (
     #define _end )
-    #define _mutable(T) T
     #define _constant(T) const T
-    #define mul(a, b) (a) * (b)
 #endif
 
 #define PI 3.14159265359
-#define u_res iResolution
 #define u_time iTime
-#define u_mouse iMouse
 
 struct ray_t {
 	vec3 origin;
 	vec3 direction;
 };
-#define BIAS 1e-4 // small offset to avoid self-intersections
 
 struct sphere_t {
 	vec3 origin;
@@ -117,7 +114,7 @@ _constant(hit_t) no_hit = _begin(hit_t)
 _end;
 
 _constant(sphere_t) atmosphere = _begin(sphere_t)
-	vec3(0, -450, 0), 1000., 0
+	vec3(0, -450, 0), 800., 0
 _end;
 _constant(sphere_t) atmosphere_2 = _begin(sphere_t)
 	atmosphere.origin, atmosphere.radius + 50., 0
@@ -194,7 +191,7 @@ void intersect_plane(
 vec3 hash_w(
 	_in(vec3) x
 ){
-#if 0
+#if 1
 	vec3 xx = vec3(dot(x, vec3(127.1, 311.7, 74.7)),
 		dot(x, vec3(269.5, 183.3, 246.1)),
 		dot(x, vec3(113.5, 271.9, 124.6)));
@@ -331,16 +328,17 @@ vec3 modify_sat(vec3 clr, float sat) {
 
 void main(void) {
     vec3 worldPos = (world * vPosition).xyz;
-    
+    vec3 viewDir = normalize(worldPos - viewPos);
+
 	ray_t eye_ray = _begin(ray_t)
         viewPos,
-        normalize(worldPos - viewPos)
+        viewDir
     _end;
 
 	hit_t hit = no_hit;
 	intersect_plane(eye_ray, ground, hit);
 
-    vec3 sky = textureCube(skyTextureSampler, normalize(worldPos) * vec3(1.0, -1.0, 1.0)).xyz;
+    vec3 sky = textureCube(skyTextureSampler, viewDir * vec3(1.0, -1.0, 1.0)).xyz;
 	vec4 cld = render_clouds(eye_ray);
     
     vec3 col = vec3(0, 0, 0);
@@ -351,9 +349,13 @@ void main(void) {
 	}
     else {
         vec3 one = vec3(1.0);
-        cld.rgb = one - (one - cld.rgb) * (one - modify_sat(sky, 1.0 + cld.a));
+        vec3 skycld = modify_sat(sky, 1.0 + cld.a);
+        skycld = skycld * 0.75 * sunDir.y;
+        skycld = clamp(skycld, 0.0, 1.0);
+
+        cld.rgb = one - (one - cld.rgb) * (one - skycld);
     	col = mix(sky, cld.rgb, cld.a);
-        alpha = cld.a;
+        alpha = cld.a * smoothstep(0.0, 0.1, viewDir.y);
     }
 
 	gl_FragColor = vec4(col, alpha);
