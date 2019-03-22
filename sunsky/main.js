@@ -72,10 +72,12 @@ window.onload = function() {
     
     let canvas = document.getElementById('babylon_canvas');
     let engine = new BABYLON.Engine(canvas, true);
+
     console.log(`WebGL version ${engine.webGLVersion}`);
 
     let createScene = function () {
         let scene = new BABYLON.Scene(engine);
+        let noiseTex = new BABYLON.Texture('content/whitenoise256.png', scene);
 
         // Adding a light
         let light = new BABYLON.HemisphericLight();
@@ -97,7 +99,8 @@ window.onload = function() {
         // Add cloud layer
         let cloudMaterial = shaderCloud.create(scene);
         cloudMaterial.setTexture("skyTextureSampler", probe.cubeTexture);
-        let cloudLayer = BABYLON.Mesh.CreateBox("cloudLayer", 10000.0, scene);
+        cloudMaterial.setTexture("noiseTextureSampler", noiseTex);
+        let cloudLayer = BABYLON.Mesh.CreateBox("cloudLayer", 5000.0, scene);
         cloudLayer.material = cloudMaterial;
         //cloudLayer.position.y = 500;
         //cloudLayer.rotation.x = 1.570796;
@@ -162,7 +165,7 @@ window.onload = function() {
 
         let sunDir = new BABYLON.Vector3(skySettings.sun_x, skySettings.sun_y, skySettings.sun_z).normalizeToNew();
         let viewPos = scene.activeCamera.position;
-        
+
         if (scene.skybox)
         {
             let mtl = scene.skybox.material;
