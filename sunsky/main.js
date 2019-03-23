@@ -20,7 +20,8 @@ let SkySettings = function() {
     //this.tm_b = 0.0;  // pedestal
 
     this.cloudscale = 0.05;
-    this.cloudspeed = 0.0; //0.1;
+    this.cloudspeed = 0.1;
+    //this.cloudspeed = 0.0;
 
     this.init_gui = function() {
         let gui = new dat.GUI();

@@ -49,7 +49,7 @@ uniform float cloudspeed;
 
 /**** TWEAK *****************************************************************/
 #define COVERAGE		.50
-#define THICKNESS		16.
+#define THICKNESS		8.
 #define ABSORPTION		1.130725
 #define CLOUD_SCALE     cloudscale
 
@@ -178,6 +178,11 @@ void intersect_plane(
 // ----------------------------------------------------------------------------
 // Noise function by iq from https://www.shadertoy.com/view/ldl3Dl
 // ----------------------------------------------------------------------------
+float hash(vec3 p) {
+    p  = fract( p*0.3183099+.1 );
+	p *= 17.0;
+    return fract( p.x*p.y*p.z*(p.x+p.y+p.z) );
+}
 
 vec3 hash_w(
 	_in(vec3) x
@@ -279,7 +284,6 @@ vec4 render_clouds(
 	float march_step = thickness / float(steps);
 
 	vec3 dir_step = eye.direction / eye.direction.y * march_step;
-	dir_step *= 0.25;
 	vec3 pos = hit.origin;
 
 	float T = 1.; // transmitance
@@ -303,8 +307,7 @@ vec4 render_clouds(
 			dens;
 		alpha += (1. - T_i) * (1. - alpha);
 
-		pos += dir_step;
-		dir_step *= 1.01;
+		pos += dir_step * (hash((pos + iTime) * 0.25) * 0.5 + 0.5);
 		if (length(pos) > 1e3) break;
 	}
     
