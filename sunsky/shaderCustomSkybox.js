@@ -218,9 +218,9 @@ void main(void) {
                            min(1.0, pow(sunIntensity, 10.0) * .60)
                           ) * sunParams.x;
 
-	skyLuminance 		= skyLuminance + sunIntensity;
+	//skyLuminance 		= skyLuminance + sunIntensity;
 
-    skyLuminance        = modify_sat(skyLuminance, 1.5);
+    //skyLuminance        = modify_sat(skyLuminance, 1.5);
 
 	gl_FragColor 		= vec4( skyLuminance, 1.0 );
 }    

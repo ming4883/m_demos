@@ -49,10 +49,8 @@ uniform float cloudspeed;
 
 /**** TWEAK *****************************************************************/
 #define COVERAGE		.50
-#define THICKNESS		50.
-#define EXPONENT		1.5
+#define THICKNESS		16.
 #define ABSORPTION		1.130725
-#define BRIGHTNESS 		0.67
 #define CLOUD_SCALE     cloudscale
 
 #define WIND			vec3(0, 0, -u_time * cloudspeed)
@@ -64,7 +62,7 @@ uniform float cloudspeed;
 #define FAKE_LIGHT
 #define SUN_DIR			sunDir
 
-#define STEPS			32
+#define STEPS			16
 /******************************************************************************/
 
 #if defined(GL_ES) || defined(GL_SHADING_LANGUAGE_VERSION)
@@ -112,11 +110,8 @@ _constant(hit_t) no_hit = _begin(hit_t)
 	vec3(0., 0., 0.) // origin
 _end;
 
-_constant(sphere_t) atmosphere = _begin(sphere_t)
-	vec3(0, 0, 0), 10000., 0
-_end;
-_constant(plane_t) ground = _begin(plane_t)
-	vec3(0., -1., 0.), -500., 1
+_constant(plane_t) skyplane = _begin(plane_t)
+	vec3(0., 1., 0.), 10., 1
 _end;
 
 
@@ -273,21 +268,24 @@ float density(
 }
 
 vec4 render_clouds(
-	_in(ray_t) eye
+	_in(ray_t) eye,
+	_in(vec3) sky
 ){
 	hit_t hit = no_hit;
-	intersect_sphere(eye, atmosphere, hit);
+    intersect_plane(eye, skyplane, hit);
 	
 	const float thickness = THICKNESS;
 	const int steps = STEPS;
 	float march_step = thickness / float(steps);
 
 	vec3 dir_step = eye.direction / eye.direction.y * march_step;
+	dir_step *= 0.25;
 	vec3 pos = hit.origin;
 
 	float T = 1.; // transmitance
 	vec3 C = vec3(0, 0, 0); // color
 	float alpha = 0.;
+    float sun = (.5 + abs(dot(eye.direction, SUN_DIR)));
 
 	for (int i = 0; i < steps; i++) {
         
@@ -296,20 +294,26 @@ vec4 render_clouds(
 
 		float T_i = exp(-ABSORPTION * dens * march_step);
 		T *= T_i;
-		if (T < .01) break;
+		if (T < .0001) break;
 
 		C += T * 
 #ifdef FAKE_LIGHT
-			exp(h) *
+			exp(h * h) * sun *
 #endif
-			dens * march_step;
+			dens;
 		alpha += (1. - T_i) * (1. - alpha);
 
 		pos += dir_step;
+		dir_step *= 1.01;
+		if (length(pos) > 1e3) break;
 	}
+    
+    C = C * 0.67 * march_step;
 
-    C = clamp(C * BRIGHTNESS, vec3(0.0), vec3(1.0));
+    C = clamp(C, vec3(0.0), vec3(1.0));
     alpha = clamp(alpha, 0.0, 1.0);
+
+	C = C / (0.001 + alpha);
 	return vec4(C, alpha);
 }
 
@@ -325,25 +329,22 @@ void main(void) {
     vec3 worldPos = (world * vPosition).xyz;
     vec3 viewDir = normalize(worldPos - viewPos);
 
+	// relative to eye pos to increase precision
 	ray_t eye_ray = _begin(ray_t)
-        viewPos,
+        vec3(0.),
         viewDir
     _end;
 
     vec3 sky = textureCube(skyTextureSampler, viewDir * vec3(1.0, -1.0, 1.0)).xyz;
-	vec4 cld = render_clouds(eye_ray);
-    
+	
+	vec4 cld = render_clouds(eye_ray, sky);
+
     vec3 col = vec3(0, 0, 0);
     float alpha = 0.0;
 
-    vec3 one = vec3(1.0);
-	vec3 skycld = modify_sat(sky, 1.0 + cld.a);
-	skycld = skycld * 0.75 * sunDir.y;
-	skycld = clamp(skycld, 0.0, 1.0);
-
-	cld.rgb = one - (one - cld.rgb) * (one - skycld);
-	col = mix(sky, cld.rgb, cld.a);
-	alpha = cld.a * smoothstep(0.0, 0.1, viewDir.y);
+	col = cld.rgb;
+	alpha = cld.a;
+	alpha = alpha * smoothstep(0.0, 0.1, viewDir.y);
 
 	gl_FragColor = vec4(col, alpha);
 }    

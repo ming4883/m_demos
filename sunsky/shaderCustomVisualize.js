@@ -73,7 +73,7 @@ create : function(scene) {
         attributes: ["position", "normal", "uv"],
         uniforms: ["world", "worldView", "worldViewProjection", "view", "projection" ],
     });
-    mtl.backFaceCulling = false;
+    //mtl.backFaceCulling = false;
     return mtl;
 }
 };

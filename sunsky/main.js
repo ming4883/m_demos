@@ -2,7 +2,7 @@
 
 let SkySettings = function() {
     this.turbidity = 2.2;
-    this.sun_x = -0.75;
+    this.sun_x = 0.0;
     this.sun_y = 1.0;
     this.sun_z = -1;
     this.sun_brightness = 0.25;
@@ -19,8 +19,8 @@ let SkySettings = function() {
     this.pp_tonemapping = true;
     //this.tm_b = 0.0;  // pedestal
 
-    this.cloudscale = 0.0004;
-    this.cloudspeed = 0.1;
+    this.cloudscale = 0.05;
+    this.cloudspeed = 0.0; //0.1;
 
     this.init_gui = function() {
         let gui = new dat.GUI();
@@ -47,7 +47,7 @@ let SkySettings = function() {
         //f3.open();
 
         let f4 = gui.addFolder('Cloud');
-        f4.add(this, 'cloudscale', 0.0001, 0.001, 0.0001);
+        f4.add(this, 'cloudscale', 0.0, 0.3, 0.001);
         f4.add(this, 'cloudspeed', 0, 1.0, 0.01);
         f4.open();
 
@@ -77,7 +77,7 @@ window.onload = function() {
         let light = new BABYLON.HemisphericLight();
 
         // Adding an Arc Rotate Camera
-        let camera = new BABYLON.ArcRotateCamera("Camera", 1.570796, 1.570796, 500, BABYLON.Vector3.Zero(), scene);
+        let camera = new BABYLON.ArcRotateCamera("Camera", 1.570796, 0.5 + 1.570796, 100, BABYLON.Vector3.Zero(), scene);
         camera.attachControl(canvas, false);
 
         // Add skybox
