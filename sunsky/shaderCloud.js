@@ -49,7 +49,7 @@ uniform float cloudspeed;
 
 /**** TWEAK *****************************************************************/
 #define COVERAGE		.50
-#define THICKNESS		8.
+#define THICKNESS		50.
 #define EXPONENT		1.5
 #define ABSORPTION		1.130725
 #define BRIGHTNESS 		0.67
@@ -61,11 +61,10 @@ uniform float cloudspeed;
 //#define NOISE_VALUE
 #define NOISE_WORLEY
 
-//#define SIMULATE_LIGHT
 #define FAKE_LIGHT
 #define SUN_DIR			sunDir
 
-#define STEPS			8
+#define STEPS			32
 /******************************************************************************/
 
 #if defined(GL_ES) || defined(GL_SHADING_LANGUAGE_VERSION)
@@ -114,10 +113,7 @@ _constant(hit_t) no_hit = _begin(hit_t)
 _end;
 
 _constant(sphere_t) atmosphere = _begin(sphere_t)
-	vec3(0, -450, 0), 800., 0
-_end;
-_constant(sphere_t) atmosphere_2 = _begin(sphere_t)
-	atmosphere.origin, atmosphere.radius + 50., 0
+	vec3(0, 0, 0), 10000., 0
 _end;
 _constant(plane_t) ground = _begin(plane_t)
 	vec3(0., -1., 0.), -500., 1
@@ -191,7 +187,7 @@ void intersect_plane(
 vec3 hash_w(
 	_in(vec3) x
 ){
-#if 1
+#if 0
 	vec3 xx = vec3(dot(x, vec3(127.1, 311.7, 74.7)),
 		dot(x, vec3(269.5, 183.3, 246.1)),
 		dot(x, vec3(113.5, 271.9, 124.6)));
@@ -304,13 +300,12 @@ vec4 render_clouds(
 
 		C += T * 
 #ifdef FAKE_LIGHT
-			exp(pow(h, EXPONENT)) *
+			exp(h) *
 #endif
 			dens * march_step;
 		alpha += (1. - T_i) * (1. - alpha);
 
 		pos += dir_step;
-		if (length(pos) > 1e3) break;
 	}
 
     C = clamp(C * BRIGHTNESS, vec3(0.0), vec3(1.0));
@@ -335,28 +330,20 @@ void main(void) {
         viewDir
     _end;
 
-	hit_t hit = no_hit;
-	intersect_plane(eye_ray, ground, hit);
-
     vec3 sky = textureCube(skyTextureSampler, viewDir * vec3(1.0, -1.0, 1.0)).xyz;
 	vec4 cld = render_clouds(eye_ray);
     
     vec3 col = vec3(0, 0, 0);
     float alpha = 0.0;
 
-    if (hit.material_id == 1) {
-		col = sky;
-	}
-    else {
-        vec3 one = vec3(1.0);
-        vec3 skycld = modify_sat(sky, 1.0 + cld.a);
-        skycld = skycld * 0.75 * sunDir.y;
-        skycld = clamp(skycld, 0.0, 1.0);
+    vec3 one = vec3(1.0);
+	vec3 skycld = modify_sat(sky, 1.0 + cld.a);
+	skycld = skycld * 0.75 * sunDir.y;
+	skycld = clamp(skycld, 0.0, 1.0);
 
-        cld.rgb = one - (one - cld.rgb) * (one - skycld);
-    	col = mix(sky, cld.rgb, cld.a);
-        alpha = cld.a * smoothstep(0.0, 0.1, viewDir.y);
-    }
+	cld.rgb = one - (one - cld.rgb) * (one - skycld);
+	col = mix(sky, cld.rgb, cld.a);
+	alpha = cld.a * smoothstep(0.0, 0.1, viewDir.y);
 
 	gl_FragColor = vec4(col, alpha);
 }    

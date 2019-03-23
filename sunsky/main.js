@@ -19,8 +19,8 @@ let SkySettings = function() {
     this.pp_tonemapping = true;
     //this.tm_b = 0.0;  // pedestal
 
-    this.cloudscale = 0.004;
-    this.cloudspeed = 0.2;
+    this.cloudscale = 0.0004;
+    this.cloudspeed = 0.1;
 
     this.init_gui = function() {
         let gui = new dat.GUI();
@@ -47,8 +47,8 @@ let SkySettings = function() {
         //f3.open();
 
         let f4 = gui.addFolder('Cloud');
-        f4.add(this, 'cloudscale', 0.0001, 0.01, 0.0001);
-        f4.add(this, 'cloudspeed', 0, 2.0, 0.01);
+        f4.add(this, 'cloudscale', 0.0001, 0.001, 0.0001);
+        f4.add(this, 'cloudspeed', 0, 1.0, 0.01);
         f4.open();
 
         let f5 = gui.addFolder('Post Process');
@@ -71,7 +71,7 @@ window.onload = function() {
 
     let createScene = function () {
         let scene = new BABYLON.Scene(engine);
-        let noiseTex = new BABYLON.Texture('content/whitenoise256.png', scene);
+        let noiseTex = new BABYLON.Texture('content/whitenoise256.png', scene, true, false);
 
         // Adding a light
         let light = new BABYLON.HemisphericLight();
@@ -96,13 +96,12 @@ window.onload = function() {
         cloudMaterial.setTexture("noiseTextureSampler", noiseTex);
         let cloudLayer = BABYLON.Mesh.CreateBox("cloudLayer", 5000.0, scene);
         cloudLayer.material = cloudMaterial;
-        //cloudLayer.position.y = 500;
-        //cloudLayer.rotation.x = 1.570796;
         scene.cloudLayer = cloudLayer;
 
         // this is god damn important for using RenderTargetTexture in ShaderMaterial
         scene.customRenderTargets.push(probe.cubeTexture);
 
+        /*
         // Import meshes
         BABYLON.SceneLoader.Append("./content/buster_drone/", "scene.gltf", scene, function (loaded) {
             
@@ -123,6 +122,15 @@ window.onload = function() {
                 }
             }
         });
+        */
+
+        let groundMaterial = shaderCustomVisualize.create(scene);
+        groundMaterial.setTexture("baseTextureSampler", new BABYLON.Texture('content/buster_drone/textures/Boden_baseColor.png', scene));
+        groundMaterial.setTexture("skyTextureSampler", probe.cubeTexture);
+
+        let ground = BABYLON.Mesh.CreatePlane("ground", 100.0, scene);
+        ground.rotation.x = 1.570796;
+        ground.material = groundMaterial;
 
         let pipeline = new BABYLON.DefaultRenderingPipeline(
             "default", // The name of the pipeline
