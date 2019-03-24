@@ -5,14 +5,14 @@ let SkySettings = function() {
     this.sun_x = 0.0;
     this.sun_y = 1.0;
     this.sun_z = -1;
-    this.sun_brightness = 0.25;
+    this.sun_brightness = 0.5;
     
     // https://www.desmos.com/calculator/gslcdxvipg
     this.tm_P = 12.0;  // max display brightness
     this.tm_P_r = 1.0;  // max display brightness red scalar
     this.tm_P_g = 1.0;  // max display brightness green scalar
     this.tm_P_b = 1.0;  // max display brightness blue scalar
-    this.tm_a = 0.35;  // contrast
+    this.tm_a = 0.75;  // contrast
     this.tm_m = 0.22; // linear section start
     this.tm_l = 0.4;  // linear section length
     this.tm_c = 1.33; // black
@@ -20,7 +20,7 @@ let SkySettings = function() {
     //this.tm_b = 0.0;  // pedestal
 
     this.cloudscale = 0.05;
-    this.cloudspeed = 0.1;
+    this.cloudspeed = 0.25;
     //this.cloudspeed = 0.0;
 
     this.init_gui = function() {
@@ -99,6 +99,12 @@ window.onload = function() {
         cloudLayer.material = cloudMaterial;
         scene.cloudLayer = cloudLayer;
 
+        let sunMaterial = shaderSun.create(scene);
+        let sunLayer = BABYLON.Mesh.CreateBox("sunLayer", 5000.0, scene);
+        sunLayer.material = sunMaterial;
+        sunLayer.renderingGroupId = 1;
+        scene.sunLayer = sunLayer;
+
         // this is god damn important for using RenderTargetTexture in ShaderMaterial
         scene.customRenderTargets.push(probe.cubeTexture);
 
@@ -167,13 +173,13 @@ window.onload = function() {
     engine.runRenderLoop(function() {
 
         let sunDir = new BABYLON.Vector3(skySettings.sun_x, skySettings.sun_y, skySettings.sun_z).normalizeToNew();
+        let sunParams = new BABYLON.Vector4(1.0, 1.0, 1.0, skySettings.sun_brightness);
         let viewPos = scene.activeCamera.position;
 
         if (scene.skybox)
         {
             let mtl = scene.skybox.material;
             
-            let sunParams = new BABYLON.Vector4(skySettings.sun_brightness, 0.0, 0.0, 0.0);
             let tm0 = new BABYLON.Vector4(
                 skySettings.tm_P,
                 skySettings.tm_a,
@@ -200,6 +206,14 @@ window.onload = function() {
             mtl.setFloat("cloudspeed", skySettings.cloudspeed);
             mtl.setVector3("sunDir", sunDir);
             mtl.setVector3("viewPos", viewPos);
+        }
+
+        if (scene.sunLayer)
+        {
+            let mtl = scene.sunLayer.material;
+
+            mtl.setVector3("sunDir", sunDir);
+            mtl.setVector4("sunParams", sunParams);
         }
 
         scene.render();

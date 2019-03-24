@@ -213,14 +213,16 @@ void main(void) {
 	skyLuminance.y		= Tonemap_Uchimura(skyLuminance.y, tonemapping1.z);
 	skyLuminance.z		= Tonemap_Uchimura(skyLuminance.z, tonemapping1.w);
 
+    /*
 	float sunIntensity  = max(0.0, dot(viewDir, sunDir));
 	sunIntensity 		= (min(1.0, pow(sunIntensity, 1500.0) * 5.0) +
                            min(1.0, pow(sunIntensity, 10.0) * .60)
-                          ) * sunParams.x;
+                          ) * sunParams.w;
 
 	//skyLuminance 		= skyLuminance + sunIntensity;
-
-    //skyLuminance        = modify_sat(skyLuminance, 1.5);
+    */
+   
+    skyLuminance        = modify_sat(skyLuminance, 1.5);
 
 	gl_FragColor 		= vec4( skyLuminance, 1.0 );
 }    

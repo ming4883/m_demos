@@ -286,11 +286,13 @@ vec4 render_clouds(
 	vec3 dir_step = eye.direction / eye.direction.y * march_step;
 	vec3 pos = hit.origin;
 
+	// make the cloud ray march in various height level
+	pos.y += (noise(pos * 0.002) * 1.0 - 0.5) * thickness;
+
 	float T = 1.; // transmitance
 	vec3 C = vec3(0, 0, 0); // color
 	float alpha = 0.;
-    float sun = (.5 + abs(dot(eye.direction, SUN_DIR)));
-
+    
 	for (int i = 0; i < steps; i++) {
         
 		float h = float(i) / float(steps);
@@ -300,14 +302,18 @@ vec4 render_clouds(
 		T *= T_i;
 		if (T < .0001) break;
 
+		
 		C += T * 
 #ifdef FAKE_LIGHT
-			exp(h * h) * sun *
+			exp(h * h * h) *
 #endif
 			dens;
+
+		//float sun = density(pos - sunDir * 0.125, WIND, h);
+		//C += vec3(sun * sun * T) * sky;
 		alpha += (1. - T_i) * (1. - alpha);
 
-		pos += dir_step * (hash((pos + iTime) * 0.25) * 0.5 + 0.5);
+		pos += dir_step * (hash((pos + iTime) * 0.25) * 0.25 + 0.25);
 		if (length(pos) > 1e3) break;
 	}
     
@@ -317,7 +323,12 @@ vec4 render_clouds(
     alpha = clamp(alpha, 0.0, 1.0);
 
 	C = C / (0.001 + alpha);
-	return vec4(C, alpha);
+
+	vec3 R = C;
+	R = (vec3(1.) - (vec3(1.) - R) * (vec3(1.) - sky));
+	R = (vec3(1.) - (vec3(1.) - R) * (vec3(1.) - sky));
+	R *= C;
+	return vec4(R, alpha);
 }
 
 // ----------------------------------------------------------------------------
