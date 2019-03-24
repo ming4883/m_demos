@@ -88,17 +88,31 @@ window.onload = function() {
 
         scene.skybox = skybox;
 
-        let probe = new BABYLON.ReflectionProbe("Probe", 256, scene, true, true);
-        probe.renderList.push(skybox);
+        let skyProbe = new BABYLON.ReflectionProbe("skyProbe", 256, scene, true, true);
+        skyProbe.renderList.push(skybox);
 
         // Add cloud layer
         let cloudMaterial = shaderCloud.create(scene);
-        cloudMaterial.setTexture("skyTextureSampler", probe.cubeTexture);
+        cloudMaterial.setTexture("skyTextureSampler", skyProbe.cubeTexture);
         cloudMaterial.setTexture("noiseTextureSampler", noiseTex);
         let cloudLayer = BABYLON.Mesh.CreateBox("cloudLayer", 5000.0, scene);
         cloudLayer.material = cloudMaterial;
-        cloudLayer.renderingGroupId = 1;
+        
         scene.cloudLayer = cloudLayer;
+
+        scene.meshes.pop(cloudLayer);
+
+        let cloudRTSize = {width:engine.getRenderWidth() / 2, height:engine.getRenderHeight() / 2};
+        let cloudRT = new BABYLON.RenderTargetTexture("cloudRT", cloudRTSize, scene, false, true);
+        cloudRT.renderList.push(cloudLayer);
+
+        let cloudAAMaterial = shaderCloudAA.create(scene);
+        let cloudAALayer = BABYLON.Mesh.CreateBox("cloudAALayer", 5000.0, scene);
+        cloudAAMaterial.setTexture("cloudTextureSampler", cloudRT);
+        cloudAAMaterial.setVector4("cloudTextureSize", new BABYLON.Vector4(1.0 / cloudRTSize.width, 1.0 / cloudRTSize.height, cloudRTSize.width, cloudRTSize.height));
+        cloudAALayer.material = cloudAAMaterial;
+        cloudAALayer.renderingGroupId = 1;
+        scene.cloudAALayer = cloudAALayer;
 
         let sunMaterial = shaderSun.create(scene);
         let sunLayer = BABYLON.Mesh.CreateBox("sunLayer", 5000.0, scene);
@@ -107,7 +121,8 @@ window.onload = function() {
         scene.sunLayer = sunLayer;
 
         // this is god damn important for using RenderTargetTexture in ShaderMaterial
-        scene.customRenderTargets.push(probe.cubeTexture);
+        scene.customRenderTargets.push(skyProbe.cubeTexture);
+        scene.customRenderTargets.push(cloudRT);
 
         /*
         // Import meshes
@@ -125,7 +140,7 @@ window.onload = function() {
                     //console.log(`${i}, ${srcMaterial.albedoTexture}`);
                     let objMaterial = shaderCustomVisualize.create(scene);
                     objMaterial.setTexture("baseTextureSampler", srcMaterial.albedoTexture);
-                    objMaterial.setTexture("skyTextureSampler", probe.cubeTexture);
+                    objMaterial.setTexture("skyTextureSampler", skyProbe.cubeTexture);
                     loaded.meshes[i].material = objMaterial;
                 }
             }
@@ -134,7 +149,7 @@ window.onload = function() {
 
         let groundMaterial = shaderCustomVisualize.create(scene);
         groundMaterial.setTexture("baseTextureSampler", new BABYLON.Texture('content/buster_drone/textures/Boden_baseColor.png', scene));
-        groundMaterial.setTexture("skyTextureSampler", probe.cubeTexture);
+        groundMaterial.setTexture("skyTextureSampler", skyProbe.cubeTexture);
 
         let ground = BABYLON.Mesh.CreatePlane("ground", 100.0, scene);
         ground.rotation.x = 1.570796;

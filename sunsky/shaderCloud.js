@@ -287,8 +287,8 @@ vec4 render_clouds(
 	vec3 dir_step = eye.direction / eye.direction.y * march_step;
 	vec3 pos = hit.origin;
 
-	// make the cloud ray march in various height level
-	pos.y += (noise(pos * 0.002) * 1.0 - 0.5) * thickness;
+	// makes the ray marching happens in various height level
+	pos.y += (noise(pos * 0.005) * 2.0 - 1.0) * thickness * 2.0;
 
 	float T = 1.; // transmitance
 	vec3 C = vec3(0, 0, 0); // color
@@ -314,7 +314,7 @@ vec4 render_clouds(
 		//C += vec3(sun * sun * T) * sky;
 		alpha += (1. - T_i) * (1. - alpha);
 
-		pos += dir_step * (hash((pos + iTime) * 0.25) * 0.25 + 0.25);
+		pos += dir_step * (hash((pos + iTime * 0.25) * 0.5) * 0.25 + 0.25);
 		if (length(pos) > 1e3) break;
 	}
     
@@ -361,6 +361,7 @@ void main(void) {
 	alpha = cld.a;
 	alpha = alpha * smoothstep(0.0, 0.1, viewDir.y);
 
+	col = mix(sky, col, alpha);
 	gl_FragColor = vec4(col, alpha);
 }    
 `,
@@ -378,8 +379,8 @@ create : function(scene) {
         uniforms: ["world", "worldView", "worldViewProjection", "view", "projection"],
     });
     mtl.backFaceCulling = false;
-    mtl.alpha = 0.5;
-    mtl.alphaMode = BABYLON.Engine.ALPHA_COMBINE;
+    //mtl.alpha = 0.5;
+    //mtl.alphaMode = BABYLON.Engine.ALPHA_COMBINE;
     return mtl;
 }
 };
