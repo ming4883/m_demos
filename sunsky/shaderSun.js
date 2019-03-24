@@ -45,9 +45,7 @@ void main(void) {
 
     vec3 viewDir  		= normalize( vec3( world * vPosition ) );
 	float sunIntensity  = max(0.0, dot(viewDir, sunDir));
-	sunIntensity 		= (min(1.0, pow(sunIntensity, 1500.0) * 5.0) +
-                           min(1.0, pow(sunIntensity, 10.0) * .60)
-                          ) * sunParams.w;
+	sunIntensity 		= min(1.0, pow(sunIntensity, 1500.0) * 5.0) * sunParams.w;
 	gl_FragColor 		= vec4( sunParams.xyz * sunIntensity, 1.0 );
 }    
 `,

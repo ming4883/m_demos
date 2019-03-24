@@ -97,12 +97,13 @@ window.onload = function() {
         cloudMaterial.setTexture("noiseTextureSampler", noiseTex);
         let cloudLayer = BABYLON.Mesh.CreateBox("cloudLayer", 5000.0, scene);
         cloudLayer.material = cloudMaterial;
+        cloudLayer.renderingGroupId = 1;
         scene.cloudLayer = cloudLayer;
 
         let sunMaterial = shaderSun.create(scene);
         let sunLayer = BABYLON.Mesh.CreateBox("sunLayer", 5000.0, scene);
         sunLayer.material = sunMaterial;
-        sunLayer.renderingGroupId = 1;
+        sunLayer.renderingGroupId = 0;
         scene.sunLayer = sunLayer;
 
         // this is god damn important for using RenderTargetTexture in ShaderMaterial
