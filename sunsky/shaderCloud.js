@@ -245,7 +245,7 @@ float fbm(
 	t += 0.25584929 * noise(p); p *= lacunarity;
 	t += 0.12527603 * noise(p); p *= lacunarity;
 	t += 0.06255931 * noise(p); p *= lacunarity;
-	t += 0.03127966 * noise(p);
+	//t += 0.03127966 * noise(p);
 	
 	return t;
 }

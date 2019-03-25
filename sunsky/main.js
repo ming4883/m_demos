@@ -78,7 +78,7 @@ window.onload = function() {
         let light = new BABYLON.HemisphericLight();
 
         // Adding an Arc Rotate Camera
-        let camera = new BABYLON.ArcRotateCamera("Camera", 1.570796, 0.5 + 1.570796, 100, BABYLON.Vector3.Zero(), scene);
+        let camera = new BABYLON.ArcRotateCamera("Camera", 1.570796, 0.5 + 1.570796, 300, BABYLON.Vector3.Zero(), scene);
         camera.attachControl(canvas, false);
 
         // Add skybox
@@ -105,13 +105,16 @@ window.onload = function() {
         let cloudRTSize = {width:engine.getRenderWidth() / 2, height:engine.getRenderHeight() / 2};
         let cloudRT = new BABYLON.RenderTargetTexture("cloudRT", cloudRTSize, scene, false, true);
         cloudRT.renderList.push(cloudLayer);
+        cloudRT.onClearObservable.add(function(engine) {
+            engine.clear(null, false, true);
+        });
 
         let cloudAAMaterial = shaderCloudAA.create(scene);
         let cloudAALayer = BABYLON.Mesh.CreateBox("cloudAALayer", 5000.0, scene);
         cloudAAMaterial.setTexture("cloudTextureSampler", cloudRT);
         cloudAAMaterial.setVector4("cloudTextureSize", new BABYLON.Vector4(1.0 / cloudRTSize.width, 1.0 / cloudRTSize.height, cloudRTSize.width, cloudRTSize.height));
         cloudAALayer.material = cloudAAMaterial;
-        cloudAALayer.renderingGroupId = 1;
+        //cloudAALayer.renderingGroupId = 1;
         scene.cloudAALayer = cloudAALayer;
 
         let sunMaterial = shaderSun.create(scene);
@@ -148,10 +151,10 @@ window.onload = function() {
         */
 
         let groundMaterial = shaderCustomVisualize.create(scene);
-        groundMaterial.setTexture("baseTextureSampler", new BABYLON.Texture('content/buster_drone/textures/Boden_baseColor.png', scene));
+        groundMaterial.setTexture("baseTextureSampler", new BABYLON.Texture('content/buster_drone/textures/material_baseColor.png', scene));
         groundMaterial.setTexture("skyTextureSampler", skyProbe.cubeTexture);
 
-        let ground = BABYLON.Mesh.CreatePlane("ground", 100.0, scene);
+        let ground = BABYLON.Mesh.CreateSphere("ground", 16, 100.0, scene);
         ground.rotation.x = 1.570796;
         ground.material = groundMaterial;
 
