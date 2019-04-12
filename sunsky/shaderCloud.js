@@ -245,7 +245,8 @@ float fbm(
 	t += 0.25584929 * noise(p); p *= lacunarity;
 	t += 0.12527603 * noise(p); p *= lacunarity;
 	t += 0.06255931 * noise(p); p *= lacunarity;
-	//t += 0.03127966 * noise(p);
+	t += 0.03127966 * noise(p); p *= lacunarity;
+	t += 0.01563983 * noise(p);
 	
 	return t;
 }
@@ -332,6 +333,24 @@ vec4 render_clouds(
 	return vec4(R, alpha);
 }
 
+vec4 render_clouds2(
+	_in(ray_t) eye,
+	_in(vec3) sky
+){
+	hit_t hit = no_hit;
+    intersect_plane(eye, skyplane, hit);
+	
+	vec3 pos = hit.origin;
+
+	// makes the ray marching happens in various height level
+	//pos.y += (noise(pos * 0.005) * 2.0 - 1.0) * THICKNESS * 2.0;
+
+	float h = 0.0;
+	float d = density (pos, WIND, h);
+
+	return vec4(clamp(d, 0.0, 1.0));
+}
+
 // ----------------------------------------------------------------------------
 // Main
 // ----------------------------------------------------------------------------
@@ -352,7 +371,7 @@ void main(void) {
 
     vec3 sky = textureCube(skyTextureSampler, viewDir * vec3(1.0, -1.0, 1.0)).xyz;
 	
-	vec4 cld = render_clouds(eye_ray, sky);
+	vec4 cld = render_clouds2(eye_ray, sky);
 
     vec3 col = vec3(0, 0, 0);
     float alpha = 0.0;
@@ -361,7 +380,7 @@ void main(void) {
 	alpha = cld.a;
 	alpha = alpha * smoothstep(0.0, 0.1, viewDir.y);
 
-	col = mix(sky, col, alpha);
+	//col = mix(sky, col, alpha);
 	gl_FragColor = vec4(col, alpha);
 }    
 `,

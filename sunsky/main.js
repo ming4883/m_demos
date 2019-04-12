@@ -20,7 +20,7 @@ let SkySettings = function() {
     //this.tm_b = 0.0;  // pedestal
 
     this.cloudscale = 0.05;
-    this.cloudspeed = 0.25;
+    this.cloudspeed = 0.05;
     //this.cloudspeed = 0.0;
 
     this.init_gui = function() {
@@ -102,7 +102,9 @@ window.onload = function() {
 
         scene.meshes.pop(cloudLayer);
 
-        let cloudRTSize = {width:engine.getRenderWidth() / 2, height:engine.getRenderHeight() / 2};
+        let cloudRTSize = {width:engine.getRenderWidth(), height:engine.getRenderHeight()};
+        cloudRTSize.width = Math.round(cloudRTSize.width / 4) * 2;
+        cloudRTSize.height = Math.round(cloudRTSize.height / 4) * 2;
         let cloudRT = new BABYLON.RenderTargetTexture("cloudRT", cloudRTSize, scene, false, true);
         cloudRT.renderList.push(cloudLayer);
         cloudRT.onClearObservable.add(function(engine) {
@@ -225,6 +227,13 @@ window.onload = function() {
             mtl.setFloat("cloudspeed", skySettings.cloudspeed);
             mtl.setVector3("sunDir", sunDir);
             mtl.setVector3("viewPos", viewPos);
+        }
+
+        if (scene.cloudAALayer)
+        {
+            let mtl = scene.cloudAALayer.material;
+            mtl.setVector3("sunDir", sunDir);
+            mtl.setFloat("iTime", time);
         }
 
         if (scene.sunLayer)
